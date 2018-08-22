@@ -160,6 +160,12 @@ is the module's name in the Python package namespace.
       *msg* using the string formatting operator. (Note that this means that you can
       use keywords in the format string, together with a single dictionary argument.)
 
+      If an argument is a parameter-less :keyword:`lambda` expression (that is,
+      ``lambda: some_expression``, its return value is merged into *msg* instead
+      of the lambda expression itself.  These lambda expressions are called only
+      if the message's level is enabled for the logger, so this can be used to
+      lazily evaluate arguments that are expensive to compute.
+
       There are three keyword arguments in *kwargs* which are inspected:
       *exc_info*, *stack_info*, and *extra*.
 
@@ -225,6 +231,10 @@ is the module's name in the Python package namespace.
 
       .. versionchanged:: 3.5
          The *exc_info* parameter can now accept exception instances.
+
+      .. versionchanged:: 3.7
+         Arguments can now be evaluated lazily using parameter-less
+         :keyword:`lambda` expressions.
 
 
    .. method:: Logger.info(msg, *args, **kwargs)
@@ -694,6 +704,14 @@ wire).
       messages, whose ``__str__`` method can return the actual format string to
       be used.
 
+      If a user-supplied argument is a parameter-less :keyword:`lambda`
+      expression, it is called and its return value is used as the argument
+      value instead of the lambda expression itself.
+
+      .. versionchanged:: 3.7
+         Arguments can now be evaluated lazily using parameter-less
+         :keyword:`lambda` expressions.
+
    .. versionchanged:: 3.2
       The creation of a ``LogRecord`` has been made more configurable by
       providing a factory which is used to create the record. The factory can be
@@ -921,6 +939,12 @@ functions.
    *msg* using the string formatting operator. (Note that this means that you can
    use keywords in the format string, together with a single dictionary argument.)
 
+   If an argument is a parameter-less :keyword:`lambda` expression (that is,
+   ``lambda: some_expression``, its return value is merged into *msg* instead of
+   the lambda expression itself.  These lambda expressions are called only if
+   the message's level is enabled for the logger, so this can be used to lazily
+   evaluate arguments that are expensive to compute.
+
    There are three keyword arguments in *kwargs* which are inspected: *exc_info*
    which, if it does not evaluate as false, causes exception information to be
    added to the logging message. If an exception tuple (in the format returned by
@@ -980,6 +1004,10 @@ functions.
 
    .. versionadded:: 3.2
       The *stack_info* parameter was added.
+
+   .. versionchanged:: 3.7
+      Arguments can now be evaluated lazily using parameter-less
+      :keyword:`lambda` expressions.
 
 .. function:: info(msg, *args, **kwargs)
 

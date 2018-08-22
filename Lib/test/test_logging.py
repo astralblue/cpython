@@ -3697,6 +3697,149 @@ class LogRecordTest(BaseTest):
             logging.logProcesses = log_processes
             logging.logMultiprocessing = log_multiprocessing
 
+
+class LogRecordArgsTest(unittest.TestCase):
+    """Test LogRecord arguments."""
+
+    class Arg(object):
+        "Placeholder argument."""
+
+        def __init__(self, s):
+            self.__s = s
+
+        def __str__(self):
+            return self.__s.lower()
+
+        def __repr__(self):
+            return self.__s.upper()
+
+    def setUp(self):
+        super(LogRecordArgsTest, self).setUp()
+        self.__py_call_count = 0
+        self.__cpy_call_count = 0
+        self.__py_arg = self.Arg("Python")
+        self.__cpy_arg = self.Arg("CPython")
+
+    def __py(self):
+        self.__py_call_count += 1
+        return self.__py_arg
+
+    def __cpy(self):
+        self.__cpy_call_count += 1
+        return self.__cpy_arg
+
+    def test_lambda_poargs(self):
+        """Test lambda positional arguments.
+        
+        Lambda arguments should be called only upon the first access to the
+        ``getMessage()`` method or the ``args`` property.
+        """
+        fmt = "%s %r"
+        args = (lambda: self.__py(), lambda: self.__cpy())
+        expected_args = (self.__py_arg, self.__cpy_arg)
+        expected_msg = "python CPYTHON"
+        rec = logging.makeLogRecord(dict(fmt=fmt, args=args))
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__cpy_call_count, 0)
+        self.assertEqual(rec.getMessage(), expected_msg)
+        self.assertEqual(self.__py_call_count, 1)
+        self.assertEqual(self.__cpy_call_count, 1)
+        self.assertEqual(rec.args, expected_args)
+        self.assertEqual(self.__py_call_count, 1)
+        self.assertEqual(self.__cpy_call_count, 1)
+        self.args = args
+        self.assertEqual(self.__py_call_count, 1)
+        self.assertEqual(self.__cpy_call_count, 1)
+        self.assertEqual(self.args, expected_args)
+        self.assertEqual(self.__py_call_count, 2)
+        self.assertEqual(self.__cpy_call_count, 2)
+        self.assertEqual(rec.getMessage(), expected_msg)
+        self.assertEqual(self.__py_call_count, 2)
+        self.assertEqual(self.__cpy_call_count, 2)
+
+    def test_lambda_kwargs(self):
+        """Test lambda positional arguments.
+        
+        Lambda arguments should be called only upon the first access to the
+        ``getMessage()`` method or the ``args`` property.
+
+        A lambda argument used multiple times in the format string should still
+        be called once.
+        """
+        fmt = "%(py)s %(py)r %(cpy)s %(cpy)r"
+        args = dict(py=lambda: self.__py(), cpy=lambda: self.__cpy())
+        expected_args = dict(py=self.__py_arg, cpy=self.__cpy_arg)
+        expected_msg = "python PYTHON cpython CPYTHON"
+        rec = logging.makeLogRecord(dict(fmt=fmt, args=args))
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__cpy_call_count, 0)
+        self.assertEqual(rec.getMessage(), expected_msg)
+        self.assertEqual(self.__py_call_count, 1)
+        self.assertEqual(self.__cpy_call_count, 1)
+        self.assertEqual(rec.args, expected_args)
+        self.assertEqual(self.__py_call_count, 1)
+        self.assertEqual(self.__cpy_call_count, 1)
+        self.args = args
+        self.assertEqual(self.__py_call_count, 1)
+        self.assertEqual(self.__cpy_call_count, 1)
+        self.assertEqual(self.args, expected_args)
+        self.assertEqual(self.__py_call_count, 2)
+        self.assertEqual(self.__cpy_call_count, 2)
+        self.assertEqual(rec.getMessage(), expected_msg)
+        self.assertEqual(self.__py_call_count, 2)
+        self.assertEqual(self.__cpy_call_count, 2)
+
+    def test_non_lambda_callable_poargs(self):
+        """Non-lambda callable positional arguments should be used as-is."""
+        fmt = "%s %r"
+        args = (self.__py, self.__cpy)
+        expected_args = args
+        expected_msg = fmt % args
+        rec = logging.makeLogRecord(dict(fmt=fmt, args=args))
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(rec.getMessage(), expected_msg)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(rec.args, expected_args)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__cpy_call_count, 0)
+        self.args = args
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__cpy_call_count, 0)
+        self.assertEqual(self.args, expected_args)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__cpy_call_count, 0)
+        self.assertEqual(rec.getMessage(), expected_msg)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__cpy_call_count, 0)
+
+    def test_non_lambda_callable_kwargs(self):
+        """Non-lambda callable keyword arguments should be used as-is."""
+        fmt = "%(py)s %(py)r %(cpy)s %(cpy)r"
+        args = dict(py=self.__py, cpy=self.__cpy)
+        expected_args = args
+        expected_msg = fmt % args
+        rec = logging.makeLogRecord(dict(fmt=fmt, args=args))
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(rec.getMessage(), expected_msg)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(rec.args, expected_args)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__cpy_call_count, 0)
+        self.args = args
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__cpy_call_count, 0)
+        self.assertEqual(self.args, expected_args)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__cpy_call_count, 0)
+        self.assertEqual(rec.getMessage(), expected_msg)
+        self.assertEqual(self.__py_call_count, 0)
+        self.assertEqual(self.__cpy_call_count, 0)
+
+
 class BasicConfigTest(unittest.TestCase):
 
     """Test suite for logging.basicConfig."""
@@ -4516,10 +4659,10 @@ def test_main():
         QueueHandlerTest, ShutdownTest, ModuleLevelMiscTest, BasicConfigTest,
         LoggerAdapterTest, LoggerTest, SMTPHandlerTest, FileHandlerTest,
         RotatingFileHandlerTest,  LastResortTest, LogRecordTest,
-        ExceptionTest, SysLogHandlerTest, IPv6SysLogHandlerTest, HTTPHandlerTest,
-        NTEventLogHandlerTest, TimedRotatingFileHandlerTest,
-        UnixSocketHandlerTest, UnixDatagramHandlerTest, UnixSysLogHandlerTest,
-        MiscTestCase
+        LogRecordArgsTest, ExceptionTest, SysLogHandlerTest,
+        IPv6SysLogHandlerTest, HTTPHandlerTest, NTEventLogHandlerTest,
+        TimedRotatingFileHandlerTest, UnixSocketHandlerTest,
+        UnixDatagramHandlerTest, UnixSysLogHandlerTest, MiscTestCase
     ]
     if hasattr(logging.handlers, 'QueueListener'):
         tests.append(QueueListenerTest)

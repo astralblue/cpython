@@ -24,7 +24,7 @@ To use, simply 'import logging' and log away!
 """
 
 import sys, os, time, io, traceback, warnings, weakref, collections.abc
-
+from inspect import isfunction, getfullargspec
 from string import Template
 
 __all__ = ['BASIC_FORMAT', 'BufferingFormatter', 'CRITICAL', 'DEBUG', 'ERROR',
@@ -318,6 +318,46 @@ class LogRecord(object):
             self.pathname, self.lineno, self.msg)
 
     __repr__ = __str__
+
+    @staticmethod
+    def __deref_lambda_arg(v):
+        if isfunction(v) and v.__name__ == '<lambda>':
+            spec = getfullargspec(v)
+            if (not spec.args and not spec.varargs and
+                not spec.kwonlyargs and not spec.varkw):
+                # parameter-less lambda; evaluate it.
+                return v()
+        return v
+
+    @property
+    def args(self):
+        """The user-supplied arguments.
+
+        If any argument is a parameter-less :keyword:`lambda` expression, its
+        result is returned instead of the lambda expression itself.  The result
+        is cached on the first access; subsequent accesses return the
+        cached value without calling the lambda expressions again.
+
+        Assigning a new value to this property clears the cache, and lambda
+        expressions in the new value will be called again on the first access.
+
+        .. versionchanged:: 3.7
+           Arguments can now be evaluated lazily using parameter-less
+           :keyword:`lambda` expressions.
+        """
+        if self.__args is None:
+            if isinstance(self.__args, collections.Mapping):
+                self.__args = {name: self.__deref_lambda_arg(value)
+                               for name, value in self.__args_raw.items()}
+            else:
+                self.__args = tuple(self.__deref_lambda_arg(value)
+                                    for value in self.__args_raw)
+        return self.__args
+
+    @args.setter
+    def args(self, args):
+        self.__args_raw = args
+        self.__args = None
 
     def getMessage(self):
         """
